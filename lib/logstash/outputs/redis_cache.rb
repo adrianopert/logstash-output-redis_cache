@@ -116,7 +116,7 @@ class LogStash::Outputs::Redis_Cache < LogStash::Outputs::Base
 #      return
 #    end
 
-    key = event.sprintf(@key)
+    key = event[@key]
     # TODO(sissel): We really should not drop an event, but historically
     # we have dropped events that fail to be converted to json.
     # TODO(sissel): Find a way to continue passing events through even
@@ -125,7 +125,7 @@ class LogStash::Outputs::Redis_Cache < LogStash::Outputs::Base
       #payload = event.to_json
 			# devolvemos solo las claves que se mencionan en el array @fields (por ahora son de "primer orden")
       #payload = event.to_hash.slice(@fields)
-      payload = LogStash::Json.dump(event.to_hash.slice(@fields))
+      payload = LogStash::Json.dump(event.to_hash.select { |k, v| @fields.include?(k) } )
     rescue Encoding::UndefinedConversionError, ArgumentError
       puts "FAILUREENCODING"
       @logger.error("Failed to convert event to JSON. Invalid UTF-8, maybe?",
@@ -144,7 +144,7 @@ class LogStash::Outputs::Redis_Cache < LogStash::Outputs::Base
 #      end
 
 			 # El payload, es un string json-encoded, entonces eventualmente podemos hacer un mset, y mandar varios pares de clave-valoe
-			 @redis.set(@key, payload)
+			 @redis.set(key, payload)
 				
     rescue => e
       @logger.warn("Failed to send event to Redis", :event => event,
